@@ -89,13 +89,19 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var CUE_ADDED = "CueAdded";
+var CUE_CHANGE = "cuechange";
+var ERROR = "error";
+var CHANGE = "change";
+var ENTER = "enter";
+var EXIT = "exit";
 
 var Cutie = function (_Memo) {
 	_inherits(Cutie, _Memo);
 
 	function Cutie(_ref) {
-		var video = _ref.video;
+		var video = _ref.video,
+		    _ref$name = _ref.name,
+		    name = _ref$name === undefined ? "cue" : _ref$name;
 
 		_classCallCheck(this, Cutie);
 
@@ -103,33 +109,71 @@ var Cutie = function (_Memo) {
 
 		_this.video = video;
 		_this.cues = [];
+		_this.cueTrack = _this.video.addTextTrack("metadata", name);
 
-		_this.cueTrack = _this.video.addTextTrack("metadata", "cue");
+		_this._changeProxy = function (e) {
+			_this.change(e);
+		};
+		_this._cueChangeProxy = function (e) {
+			_this.cueChange(e);
+		};
+		_this._errorProxy = function (e) {
+			_this.error(e);
+		};
+		_this._enterProxy = function (e) {
+			_this.enter(e);
+		};
+		_this._exitProxy = function (e) {
+			_this.exit(e);
+		};
 
-		_this.cueTrack.addEventListener("cuechange", function (e) {
-			console.log(e);
-		});
-
-		_this.cueTrack.addEventListener("error", function (e) {
-			console.log(e);
-		});
-		_this.cueTrack.addEventListener("change", function (e) {
-			console.log(e);
-		});
-
-		_this.cueTrack.addEventListener("enter", function (e) {
-			console.log(e);
-		});
-		_this.cueTrack.addEventListener("exit", function (e) {
-			console.log(e);
-		});
-
+		_this.bind();
 		return _this;
 	}
 
 	_createClass(Cutie, [{
+		key: "bind",
+		value: function bind() {
+			this.cueTrack.addEventListener(CUE_CHANGE, this._cueChangeProxy);
+			this.cueTrack.addEventListener(ERROR, this._errorProxy);
+			this.cueTrack.addEventListener(CHANGE, this._changeProxy);
+			this.cueTrack.addEventListener(ENTER, this._enterProxy);
+			this.cueTrack.addEventListener(EXIT, this._exitProxy);
+		}
+	}, {
+		key: "unbind",
+		value: function unbind() {
+			this.cueTrack.removeEventListener(CUE_CHANGE, this._changeProxy);
+			this.cueTrack.removeEventListener(ERROR, this._errorProxy);
+			this.cueTrack.removeEventListener(CHANGE, this._changeProxy);
+			this.cueTrack.removeEventListener(ENTER, this._enterProxy);
+			this.cueTrack.removeEventListener(EXIT, this._exitProxy);
+		}
+	}, {
 		key: "change",
-		value: function change(e) {}
+		value: function change(e) {
+			this.trigger(CHANGE, e);
+		}
+	}, {
+		key: "cueChange",
+		value: function cueChange(e) {
+			this.trigger(CUE_CHANGE, e);
+		}
+	}, {
+		key: "error",
+		value: function error(e) {
+			this.trigger(ERROR, e);
+		}
+	}, {
+		key: "enter",
+		value: function enter(e) {
+			this.trigger(ENTER, e);
+		}
+	}, {
+		key: "exit",
+		value: function exit(e) {
+			this.trigger(EXIT, e);
+		}
 	}, {
 		key: "addCue",
 		value: function addCue(start, end, id) {
@@ -138,7 +182,6 @@ var Cutie = function (_Memo) {
 			cue.pauseOnExit = true;
 			this.cues.push(cue);
 			this.cueTrack.addCue(cue);
-			this.trigger(CUE_ADDED);
 		}
 	}, {
 		key: "removeCue",
